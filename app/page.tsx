@@ -2,104 +2,228 @@
 
 import React, { useState } from 'react';
 
-interface VerificationCase {
+interface CarListing {
   id: string;
-  applicantName: string;
-  licenseNumber: string;
-  status: 'Pending' | 'Approved' | 'Denied';
-  submittedDate: string;
+  carName: string;
+  regNumber: string;
+  sellerName: string;
+  price: string;
+  status: 'Pending Verification' | 'Verified & Approved' | 'Rejected';
+  trustScore: number;
+  engineStatus: 'Pass' | 'Fail' | 'Pending';
+  chassisStatus: 'Original' | 'Repaired' | 'Pending';
+  odometerStatus: 'Genuine' | 'Tampered' | 'Pending';
+  rcVerified: boolean;
+  insuranceValid: boolean;
 }
 
-export default function SpotverifyDashboard() {
-  const [cases, setCases] = useState<VerificationCase[]>([
-    { id: 'VAL-1001', applicantName: 'Rahul Sharma', licenseNumber: 'KA-04-2023-1234567', status: 'Pending', submittedDate: '2026-08-20' },
-    { id: 'VAL-1002', applicantName: 'Priya Patel', licenseNumber: 'MH-12-2022-9876543', status: 'Pending', submittedDate: '2026-08-20' },
+export default function SpotverifyCompletePlatform() {
+  const [activeRole, setActiveRole] = useState<'seller' | 'verifier'>('seller');
+  
+  const [cars, setCars] = useState<CarListing[]>([
+    {
+      id: 'SV-101',
+      carName: 'Maruti Suzuki Swift VXI',
+      regNumber: 'KA-04-MB-1234',
+      sellerName: 'Karthik Kumar',
+      price: '₹ 6,50,000',
+      status: 'Verified & Approved',
+      trustScore: 94,
+      engineStatus: 'Pass',
+      chassisStatus: 'Original',
+      odometerStatus: 'Genuine',
+      rcVerified: true,
+      insuranceValid: true,
+    },
+    {
+      id: 'SV-102',
+      carName: 'Hyundai Creta SX',
+      regNumber: 'AP-03-CB-5678',
+      sellerName: 'Suresh Reddy',
+      price: '₹ 11,20,000',
+      status: 'Pending Verification',
+      trustScore: 0,
+      engineStatus: 'Pending',
+      chassisStatus: 'Pending',
+      odometerStatus: 'Pending',
+      rcVerified: false,
+      insuranceValid: false,
+    }
   ]);
 
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  // Seller Form State
+  const [carName, setCarName] = useState('');
+  const [regNumber, setRegNumber] = useState('');
+  const [sellerName, setSellerName] = useState('');
+  const [price, setPrice] = useState('');
 
-  const handleAction = (id: string, newStatus: 'Approved' | 'Denied') => {
-    setCases(cases.map(c => c.id === id ? { ...c, status: newStatus } : c));
+  // Seller Action
+  const handleAddCar = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!carName || !regNumber || !sellerName) return;
+
+    const newCar: CarListing = {
+      id: `SV-${Math.floor(100 + Math.random() * 900)}`,
+      carName,
+      regNumber: regNumber.toUpperCase(),
+      sellerName,
+      price: price ? `₹ ${price}` : '₹ Negotiable',
+      status: 'Pending Verification',
+      trustScore: 0,
+      engineStatus: 'Pending',
+      chassisStatus: 'Pending',
+      odometerStatus: 'Pending',
+      rcVerified: false,
+      insuranceValid: false,
+    };
+
+    setCars([newCar, ...cars]);
+    setCarName('');
+    setRegNumber('');
+    setSellerName('');
+    setPrice('');
   };
 
-  const handleSelfieUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setSelectedImage(URL.createObjectURL(e.target.files[0]));
-    }
+  // Verifier Action
+  const handleVerifyCar = (id: string, approve: boolean) => {
+    setCars(cars.map(car => {
+      if (car.id === id) {
+        return {
+          ...car,
+          status: approve ? 'Verified & Approved' : 'Rejected',
+          trustScore: approve ? 88 : 35,
+          engineStatus: approve ? 'Pass' : 'Fail',
+          chassisStatus: approve ? 'Original' : 'Repaired',
+          odometerStatus: approve ? 'Genuine' : 'Tampered',
+          rcVerified: approve,
+          insuranceValid: approve,
+        };
+      }
+      return car;
+    }));
   };
 
   return (
-    <main style={{ padding: '30px', fontFamily: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif', backgroundColor: '#f4f6f9', minHeight: '100vh' }}>
-      <header style={{ marginBottom: '30px', borderBottom: '2px solid #ddd', paddingBottom: '15px' }}>
-        <h1 style={{ color: '#2c3e50', margin: '0 0 10px 0' }}>Spotverify - Fraud & License Verification Dashboard</h1>
-        <p style={{ color: '#7f8c8d', margin: 0 }}>Senior Consultant Control Panel | Secure Verification System</p>
-      </header>
+    <>
+      {/* HTML Favicon & Tab Metadata Injection */}
+      <head>
+        <title>Projects | Trust Verification Portal</title>
+        <link rel="icon" href="https://supabase.com/favicon/favicon-32x32.png" type="image/png" />
+      </head>
 
-      <section style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '30px' }}>
-        <div style={{ background: '#fff', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-          <h2 style={{ fontSize: '18px', color: '#34495e', marginBottom: '15px' }}>Selfie & Identity Verification</h2>
-          <input type="file" accept="image/*" onChange={handleSelfieUpload} style={{ marginBottom: '15px' }} />
-          {selectedImage && (
-            <div>
-              <p style={{ fontSize: '14px', color: '#27ae60' }}>Selfie Uploaded Successfully for Verification:</p>
-              <img src={selectedImage} alt="Uploaded Selfie" style={{ width: '120px', height: '120px', objectFit: 'cover', borderRadius: '50%', border: '2px solid #3498db' }} />
+      <div style={{ backgroundColor: '#090d16', color: '#f8fafc', minHeight: '100vh', fontFamily: 'Inter, system-ui, sans-serif' }}>
+        
+        {/* Navigation Bar */}
+        <nav style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '16px 30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#0f172a' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <img src="https://supabase.com/favicon/favicon-32x32.png" alt="Supabase Logo" style={{ width: '24px', height: '24px' }} />
+            <span style={{ fontSize: '20px', fontWeight: '800', letterSpacing: '-0.5px' }}>
+              SPOTVERIFY <span style={{ color: '#38bdf8', fontSize: '12px' }}>HUB</span>
+            </span>
+          </div>
+
+          {/* Rapido Dual-Portal Role Selector */}
+          <div style={{ background: '#1e293b', padding: '4px', borderRadius: '8px', display: 'flex', gap: '4px' }}>
+            <button 
+              onClick={() => setActiveRole('seller')}
+              style={{ padding: '8px 16px', borderRadius: '6px', border: 'none', background: activeRole === 'seller' ? '#0284c7' : 'transparent', color: '#fff', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}>
+              Seller Dashboard
+            </button>
+            <button 
+              onClick={() => setActiveRole('verifier')}
+              style={{ padding: '8px 16px', borderRadius: '6px', border: 'none', background: activeRole === 'verifier' ? '#16a34a' : 'transparent', color: '#fff', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}>
+              Inspector / Verifier Portal
+            </button>
+          </div>
+        </nav>
+
+        <div style={{ maxWidth: '1200px', margin: '30px auto', padding: '0 20px' }}>
+          
+          {/* SELLER VIEW */}
+          {activeRole === 'seller' && (
+            <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: '30px' }}>
+              
+              {/* Seller Registration Form */}
+              <div style={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '20px' }}>
+                <h2 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '15px' }}>Sell Your Vehicle</h2>
+                <form onSubmit={handleAddCar} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <input type="text" placeholder="Vehicle Name & Model" value={carName} onChange={e => setCarName(e.target.value)} style={{ padding: '10px', background: '#1e293b', border: '1px solid #334155', color: '#fff', borderRadius: '6px' }} required />
+                  <input type="text" placeholder="Reg Number (e.g. KA-01-AB-1234)" value={regNumber} onChange={e => setRegNumber(e.target.value)} style={{ padding: '10px', background: '#1e293b', border: '1px solid #334155', color: '#fff', borderRadius: '6px' }} required />
+                  <input type="text" placeholder="Seller Name" value={sellerName} onChange={e => setSellerName(e.target.value)} style={{ padding: '10px', background: '#1e293b', border: '1px solid #334155', color: '#fff', borderRadius: '6px' }} required />
+                  <input type="text" placeholder="Expected Price (₹)" value={price} onChange={e => setPrice(e.target.value)} style={{ padding: '10px', background: '#1e293b', border: '1px solid #334155', color: '#fff', borderRadius: '6px' }} />
+                  <button type="submit" style={{ padding: '12px', background: '#0284c7', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: '700', cursor: 'pointer' }}>Submit For Inspection</button>
+                </form>
+              </div>
+
+              {/* Seller Inventory List */}
+              <div style={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '20px' }}>
+                <h2 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '15px' }}>My Listed Vehicles</h2>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {cars.map(c => (
+                    <div key={c.id} style={{ background: '#1e293b', padding: '16px', borderRadius: '8px', border: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <h3 style={{ margin: 0, fontSize: '16px' }}>{c.carName}</h3>
+                        <p style={{ margin: '4px 0', fontSize: '13px', color: '#94a3b8' }}>Reg: {c.regNumber} | Price: {c.price}</p>
+                        <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '4px', background: c.status === 'Verified & Approved' ? '#166534' : c.status === 'Rejected' ? '#991b1b' : '#854d0e', color: '#fff' }}>
+                          {c.status}
+                        </span>
+                      </div>
+                      {c.trustScore > 0 && (
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontSize: '20px', fontWeight: '800', color: '#38bdf8' }}>{c.trustScore}/100</div>
+                          <span style={{ fontSize: '11px', color: '#94a3b8' }}>Trust Score</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
             </div>
           )}
-        </div>
 
-        <div style={{ background: '#fff', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-          <h2 style={{ fontSize: '18px', color: '#34495e', marginBottom: '15px' }}>System Metrics</h2>
-          <p style={{ margin: '5px 0' }}>Total Pending Cases: <strong>{cases.filter(c => c.status === 'Pending').length}</strong></p>
-          <p style={{ margin: '5px 0' }}>Fraud Check Status: <span style={{ color: '#27ae60', fontWeight: 'bold' }}>Active & Secure</span></p>
-        </div>
-      </section>
+          {/* VERIFIER / INSPECTOR VIEW */}
+          {activeRole === 'verifier' && (
+            <div style={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '20px' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '15px', color: '#22c55e' }}>Field Verifier Audit Console</h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {cars.map(car => (
+                  <div key={car.id} style={{ background: '#1e293b', border: '1px solid #334155', padding: '20px', borderRadius: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <div>
+                        <h3 style={{ margin: 0, fontSize: '18px' }}>{car.carName} <span style={{ fontSize: '12px', color: '#94a3b8' }}>({car.id})</span></h3>
+                        <p style={{ margin: '2px 0', fontSize: '13px', color: '#cbd5e1' }}>Reg No: {car.regNumber} | Seller: {car.sellerName}</p>
+                      </div>
+                      <span style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', background: car.status === 'Verified & Approved' ? '#16a34a' : car.status === 'Rejected' ? '#dc2626' : '#d97706', color: '#fff' }}>
+                        Status: {car.status}
+                      </span>
+                    </div>
 
-      <section style={{ background: '#fff', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-        <h2 style={{ fontSize: '18px', color: '#34495e', marginBottom: '15px' }}>Driver License & Fraud Verifications (Escalations)</h2>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-          <thead>
-            <tr style={{ background: '#ecf0f1', color: '#2c3e50' }}>
-              <th style={{ padding: '12px', borderBottom: '1px solid #ddd' }}>Case ID</th>
-              <th style={{ padding: '12px', borderBottom: '1px solid #ddd' }}>Applicant Name</th>
-              <th style={{ padding: '12px', borderBottom: '1px solid #ddd' }}>License Number</th>
-              <th style={{ padding: '12px', borderBottom: '1px solid #ddd' }}>Status</th>
-              <th style={{ padding: '12px', borderBottom: '1px solid #ddd' }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {cases.map((item) => (
-              <tr key={item.id} style={{ borderBottom: '1px solid #eee' }}>
-                <td style={{ padding: '12px' }}>{item.id}</td>
-                <td style={{ padding: '12px' }}>{item.applicantName}</td>
-                <td style={{ padding: '12px' }}>{item.licenseNumber}</td>
-                <td style={{ padding: '12px' }}>
-                  <span style={{
-                    padding: '5px 10px',
-                    borderRadius: '4px',
-                    color: '#fff',
-                    backgroundColor: item.status === 'Approved' ? '#27ae60' : item.status === 'Denied' ? '#c0392b' : '#f39c12',
-                    fontSize: '12px'
-                  }}>
-                    {item.status}
-                  </span>
-                </td>
-                <td style={{ padding: '12px' }}>
-                  <button 
-                    onClick={() => handleAction(item.id, 'Approved')}
-                    style={{ marginRight: '8px', padding: '6px 12px', background: '#27ae60', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-                    Approve
-                  </button>
-                  <button 
-                    onClick={() => handleAction(item.id, 'Denied')}
-                    style={{ padding: '6px 12px', background: '#c0392b', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-                    Deny
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
-    </main>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', background: '#0f172a', padding: '12px', borderRadius: '6px', fontSize: '12px', marginBottom: '15px' }}>
+                      <div>Engine Check: <strong>{car.engineStatus}</strong></div>
+                      <div>Chassis: <strong>{car.chassisStatus}</strong></div>
+                      <div>Odometer: <strong>{car.odometerStatus}</strong></div>
+                      <div>RC & Insurance: <strong>{car.rcVerified ? 'Verified' : 'Pending'}</strong></div>
+                    </div>
+
+                    {car.status === 'Pending Verification' && (
+                      <div style={{ display: 'flex', gap: '10px' }}>
+                        <button onClick={() => handleVerifyCar(car.id, true)} style={{ flex: 1, padding: '10px', background: '#16a34a', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>
+                          ✓ Approve Vehicle & Issue Trust Score
+                        </button>
+                        <button onClick={() => handleVerifyCar(car.id, false)} style={{ flex: 1, padding: '10px', background: '#dc2626', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>
+                          ✕ Reject (Fraud Risk)
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+        </div>
+      </div>
+    </>
   );
 }
