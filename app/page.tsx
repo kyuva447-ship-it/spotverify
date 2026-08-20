@@ -1,229 +1,394 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createClient } from '@supabase/supabase-js';
 
-interface CarListing {
-  id: string;
-  carName: string;
-  regNumber: string;
-  sellerName: string;
-  price: string;
-  status: 'Pending Verification' | 'Verified & Approved' | 'Rejected';
-  trustScore: number;
-  engineStatus: 'Pass' | 'Fail' | 'Pending';
-  chassisStatus: 'Original' | 'Repaired' | 'Pending';
-  odometerStatus: 'Genuine' | 'Tampered' | 'Pending';
-  rcVerified: boolean;
-  insuranceValid: boolean;
+// Supabase Initialization
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabase = createClient(
+  supabaseUrl || 'https://placeholder.supabase.co',
+  supabaseAnonKey || 'placeholder'
+);
+
+type IndustryCategory = 'Vehicles' | 'Real Estate' | 'Electronics' | 'Heavy Machinery';
+
+interface AuditItem {
+  id?: string;
+  category: IndustryCategory;
+  item_name: string;
+  identifier_no: string;
+  declared_value: number;
+  calculated_fee: number;
+  seller_name: string;
+  status: string;
+  payment_status: string;
+  razorpay_payment_id?: string;
+  lat?: number;
+  lng?: number;
+  trust_score: number;
+  param1_status: string;
+  param2_status: string;
+  param3_status: string;
 }
 
-export default function SpotverifyCompletePlatform() {
-  const [activeRole, setActiveRole] = useState<'seller' | 'verifier'>('seller');
-  
-  const [cars, setCars] = useState<CarListing[]>([
-    {
-      id: 'SV-101',
-      carName: 'Maruti Suzuki Swift VXI',
-      regNumber: 'KA-04-MB-1234',
-      sellerName: 'Karthik Kumar',
-      price: '₹ 6,50,000',
-      status: 'Verified & Approved',
-      trustScore: 94,
-      engineStatus: 'Pass',
-      chassisStatus: 'Original',
-      odometerStatus: 'Genuine',
-      rcVerified: true,
-      insuranceValid: true,
-    },
-    {
-      id: 'SV-102',
-      carName: 'Hyundai Creta SX',
-      regNumber: 'AP-03-CB-5678',
-      sellerName: 'Suresh Reddy',
-      price: '₹ 11,20,000',
-      status: 'Pending Verification',
-      trustScore: 0,
-      engineStatus: 'Pending',
-      chassisStatus: 'Pending',
-      odometerStatus: 'Pending',
-      rcVerified: false,
-      insuranceValid: false,
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
+
+export default function SpotverifyApp() {
+  const [activeTab, setActiveTab] = useState<'client' | 'auditor' | 'admin'>('client');
+  const [category, setCategory] = useState<IndustryCategory>('Vehicles');
+  const [itemName, setItemName] = useState('');
+  const [identifierNo, setIdentifierNo] = useState('');
+  const [declaredValue, setDeclaredValue] = useState<number | ''>('');
+  const [userEmail, setUserEmail] = useState('');
+  const [calculatedFee, setCalculatedFee] = useState(1499);
+  const [loading, setLoading] = useState(false);
+  const [items, setItems] = useState<AuditItem[]>([]);
+
+  // Distance calculator state for Auditor GPS
+  const [auditorLat, setAuditorLat] = useState<number | null>(null);
+  const [auditorLng, setAuditorLng] = useState<number | null>(null);
+
+  // Load Razorpay Script
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !document.getElementById('razorpay-sdk')) {
+      const script = document.createElement('script');
+      script.id = 'razorpay-sdk';
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.async = true;
+      document.body.appendChild(script);
     }
-  ]);
+    fetchItems();
+  }, []);
 
-  // Seller Form State
-  const [carName, setCarName] = useState('');
-  const [regNumber, setRegNumber] = useState('');
-  const [sellerName, setSellerName] = useState('');
-  const [price, setPrice] = useState('');
-
-  // Seller Action
-  const handleAddCar = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!carName || !regNumber || !sellerName) return;
-
-    const newCar: CarListing = {
-      id: `SV-${Math.floor(100 + Math.random() * 900)}`,
-      carName,
-      regNumber: regNumber.toUpperCase(),
-      sellerName,
-      price: price ? `₹ ${price}` : '₹ Negotiable',
-      status: 'Pending Verification',
-      trustScore: 0,
-      engineStatus: 'Pending',
-      chassisStatus: 'Pending',
-      odometerStatus: 'Pending',
-      rcVerified: false,
-      insuranceValid: false,
-    };
-
-    setCars([newCar, ...cars]);
-    setCarName('');
-    setRegNumber('');
-    setSellerName('');
-    setPrice('');
+  // Fetch Items from Supabase
+  const fetchItems = async () => {
+    if (supabaseUrl && !supabaseUrl.includes('placeholder')) {
+      const { data, error } = await supabase.from('audit_items').select('*').order('created_at', { ascending: false });
+      if (!error && data) setItems(data);
+    }
   };
 
-  // Verifier Action
-  const handleVerifyCar = (id: string, approve: boolean) => {
-    setCars(cars.map(car => {
-      if (car.id === id) {
-        return {
-          ...car,
-          status: approve ? 'Verified & Approved' : 'Rejected',
-          trustScore: approve ? 88 : 35,
-          engineStatus: approve ? 'Pass' : 'Fail',
-          chassisStatus: approve ? 'Original' : 'Repaired',
-          odometerStatus: approve ? 'Genuine' : 'Tampered',
-          rcVerified: approve,
-          insuranceValid: approve,
+  // Dynamic Pricing Logic (1% - 2% with Floor & Ceiling)
+  useEffect(() => {
+    const val = Number(declaredValue) || 0;
+    let rate = 0.01;
+    let minFee = 1499;
+    let maxFee = 10000;
+
+    switch (category) {
+      case 'Electronics':
+        rate = 0.02; // 2%
+        minFee = 499;
+        maxFee = 2500;
+        break;
+      case 'Vehicles':
+        rate = 0.01; // 1%
+        minFee = 1499;
+        maxFee = 8000;
+        break;
+      case 'Heavy Machinery':
+        rate = 0.01; // 1%
+        minFee = 2999;
+        maxFee = 20000;
+        break;
+      case 'Real Estate':
+        rate = 0.005; // 0.5%
+        minFee = 4999;
+        maxFee = 25000;
+        break;
+    }
+
+    const computed = Math.round(val * rate);
+    const finalFee = Math.min(Math.max(computed, minFee), maxFee);
+    setCalculatedFee(finalFee);
+  }, [declaredValue, category]);
+
+  // Handle Client Submission and Razorpay Payment
+  const handlePaymentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!itemName || !identifierNo || !declaredValue || !userEmail) {
+      alert('Please complete all form fields.');
+      return;
+    }
+
+    setLoading(true);
+
+    // Get client current GPS location
+    navigator.geolocation.getCurrentPosition(
+      (pos) => triggerRazorpay(pos.coords.latitude, pos.coords.longitude),
+      () => triggerRazorpay(12.9716, 77.5946) // Default fallback coordinates
+    );
+  };
+
+  const triggerRazorpay = (lat: number, lng: number) => {
+    const amountInPaise = calculatedFee * 100;
+
+    const options = {
+      key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_placeholder',
+      amount: amountInPaise,
+      currency: 'INR',
+      name: 'Spotverify Platform',
+      description: `Verification Fee - ${category}`,
+      handler: async function (response: any) {
+        const newItem: AuditItem = {
+          category,
+          item_name: itemName,
+          identifier_no: identifierNo.toUpperCase(),
+          declared_value: Number(declaredValue),
+          calculated_fee: calculatedFee,
+          seller_name: userEmail.split('@')[0],
+          status: 'Pending Inspection',
+          payment_status: 'Paid',
+          razorpay_payment_id: response.razorpay_payment_id,
+          lat,
+          lng,
+          trust_score: 0,
+          param1_status: 'Pending',
+          param2_status: 'Pending',
+          param3_status: 'Pending',
         };
-      }
-      return car;
-    }));
+
+        if (supabaseUrl && !supabaseUrl.includes('placeholder')) {
+          await supabase.from('audit_items').insert([newItem]);
+        } else {
+          setItems((prev) => [newItem, ...prev]);
+        }
+
+        setLoading(false);
+        setItemName(''); setIdentifierNo(''); setDeclaredValue('');
+        alert(`Payment Success (ID: ${response.razorpay_payment_id}). Request placed!`);
+        fetchItems();
+      },
+      prefill: { email: userEmail },
+      theme: { color: '#0284c7' },
+    };
+
+    if (window.Razorpay) {
+      const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', () => {
+        alert('Payment failed. Please try again.');
+        setLoading(false);
+      });
+      rzp.open();
+    } else {
+      alert('Razorpay SDK failed to load. Please verify your connection.');
+      setLoading(false);
+    }
+  };
+
+  // Haversine Distance Calculator (km)
+  const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371;
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    return (R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))).toFixed(2);
+  };
+
+  const updateParamStatus = async (item: AuditItem, paramIndex: number, pass: boolean) => {
+    const updated = { ...item };
+    const statusVal = pass ? 'Pass' : 'Fail';
+    if (paramIndex === 1) updated.param1_status = statusVal;
+    if (paramIndex === 2) updated.param2_status = statusVal;
+    if (paramIndex === 3) updated.param3_status = statusVal;
+
+    const passes = [updated.param1_status, updated.param2_status, updated.param3_status].filter((s) => s === 'Pass').length;
+    const fails = [updated.param1_status, updated.param2_status, updated.param3_status].filter((s) => s === 'Fail').length;
+
+    if (passes + fails === 3) {
+      updated.status = fails > 0 ? 'Flagged / Rejected' : 'Verified & Approved';
+      updated.trust_score = fails > 0 ? 28 : Math.floor(Math.random() * 12) + 87;
+    }
+
+    if (supabaseUrl && !supabaseUrl.includes('placeholder')) {
+      await supabase.from('audit_items').update(updated).eq('identifier_no', item.identifier_no);
+    }
+    fetchItems();
   };
 
   return (
-    <>
-      {/* HTML Favicon & Tab Metadata Injection */}
-      <head>
-        <title>Projects | Trust Verification Portal</title>
-        <link rel="icon" href="https://supabase.com/favicon/favicon-32x32.png" type="image/png" />
-      </head>
-
-      <div style={{ backgroundColor: '#090d16', color: '#f8fafc', minHeight: '100vh', fontFamily: 'Inter, system-ui, sans-serif' }}>
-        
-        {/* Navigation Bar */}
-        <nav style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '16px 30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#0f172a' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <img src="https://supabase.com/favicon/favicon-32x32.png" alt="Supabase Logo" style={{ width: '24px', height: '24px' }} />
-            <span style={{ fontSize: '20px', fontWeight: '800', letterSpacing: '-0.5px' }}>
-              SPOTVERIFY <span style={{ color: '#38bdf8', fontSize: '12px' }}>HUB</span>
-            </span>
-          </div>
-
-          {/* Rapido Dual-Portal Role Selector */}
-          <div style={{ background: '#1e293b', padding: '4px', borderRadius: '8px', display: 'flex', gap: '4px' }}>
-            <button 
-              onClick={() => setActiveRole('seller')}
-              style={{ padding: '8px 16px', borderRadius: '6px', border: 'none', background: activeRole === 'seller' ? '#0284c7' : 'transparent', color: '#fff', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}>
-              Seller Dashboard
+    <div style={{ backgroundColor: '#080c14', color: '#f8fafc', minHeight: '100vh', fontFamily: 'Inter, sans-serif', padding: '24px' }}>
+      {/* Header Bar */}
+      <div style={{ maxWidth: '1000px', margin: '0 auto 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h1 style={{ fontSize: '24px', fontWeight: 'bold', background: 'linear-gradient(to right, #38bdf8, #818cf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            SPOTVERIFY
+          </h1>
+          <p style={{ fontSize: '12px', color: '#64748b' }}>Multi-Industry Asset Audit Engine</p>
+        </div>
+        <div style={{ display: 'flex', gap: '8px', background: '#0f172a', padding: '4px', borderRadius: '8px', border: '1px solid #1e293b' }}>
+          {(['client', 'auditor', 'admin'] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              style={{
+                padding: '6px 16px',
+                borderRadius: '6px',
+                border: 'none',
+                background: activeTab === tab ? '#0284c7' : 'transparent',
+                color: activeTab === tab ? '#fff' : '#94a3b8',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                textTransform: 'capitalize',
+              }}
+            >
+              {tab} Console
             </button>
-            <button 
-              onClick={() => setActiveRole('verifier')}
-              style={{ padding: '8px 16px', borderRadius: '6px', border: 'none', background: activeRole === 'verifier' ? '#16a34a' : 'transparent', color: '#fff', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}>
-              Inspector / Verifier Portal
-            </button>
-          </div>
-        </nav>
-
-        <div style={{ maxWidth: '1200px', margin: '30px auto', padding: '0 20px' }}>
-          
-          {/* SELLER VIEW */}
-          {activeRole === 'seller' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: '30px' }}>
-              
-              {/* Seller Registration Form */}
-              <div style={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '20px' }}>
-                <h2 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '15px' }}>Sell Your Vehicle</h2>
-                <form onSubmit={handleAddCar} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <input type="text" placeholder="Vehicle Name & Model" value={carName} onChange={e => setCarName(e.target.value)} style={{ padding: '10px', background: '#1e293b', border: '1px solid #334155', color: '#fff', borderRadius: '6px' }} required />
-                  <input type="text" placeholder="Reg Number (e.g. KA-01-AB-1234)" value={regNumber} onChange={e => setRegNumber(e.target.value)} style={{ padding: '10px', background: '#1e293b', border: '1px solid #334155', color: '#fff', borderRadius: '6px' }} required />
-                  <input type="text" placeholder="Seller Name" value={sellerName} onChange={e => setSellerName(e.target.value)} style={{ padding: '10px', background: '#1e293b', border: '1px solid #334155', color: '#fff', borderRadius: '6px' }} required />
-                  <input type="text" placeholder="Expected Price (₹)" value={price} onChange={e => setPrice(e.target.value)} style={{ padding: '10px', background: '#1e293b', border: '1px solid #334155', color: '#fff', borderRadius: '6px' }} />
-                  <button type="submit" style={{ padding: '12px', background: '#0284c7', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: '700', cursor: 'pointer' }}>Submit For Inspection</button>
-                </form>
-              </div>
-
-              {/* Seller Inventory List */}
-              <div style={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '20px' }}>
-                <h2 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '15px' }}>My Listed Vehicles</h2>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {cars.map(c => (
-                    <div key={c.id} style={{ background: '#1e293b', padding: '16px', borderRadius: '8px', border: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <h3 style={{ margin: 0, fontSize: '16px' }}>{c.carName}</h3>
-                        <p style={{ margin: '4px 0', fontSize: '13px', color: '#94a3b8' }}>Reg: {c.regNumber} | Price: {c.price}</p>
-                        <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '4px', background: c.status === 'Verified & Approved' ? '#166534' : c.status === 'Rejected' ? '#991b1b' : '#854d0e', color: '#fff' }}>
-                          {c.status}
-                        </span>
-                      </div>
-                      {c.trustScore > 0 && (
-                        <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontSize: '20px', fontWeight: '800', color: '#38bdf8' }}>{c.trustScore}/100</div>
-                          <span style={{ fontSize: '11px', color: '#94a3b8' }}>Trust Score</span>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-            </div>
-          )}
-
-          {/* VERIFIER / INSPECTOR VIEW */}
-          {activeRole === 'verifier' && (
-            <div style={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '20px' }}>
-              <h2 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '15px', color: '#22c55e' }}>Field Verifier Audit Console</h2>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {cars.map(car => (
-                  <div key={car.id} style={{ background: '#1e293b', border: '1px solid #334155', padding: '20px', borderRadius: '8px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                      <div>
-                        <h3 style={{ margin: 0, fontSize: '18px' }}>{car.carName} <span style={{ fontSize: '12px', color: '#94a3b8' }}>({car.id})</span></h3>
-                        <p style={{ margin: '2px 0', fontSize: '13px', color: '#cbd5e1' }}>Reg No: {car.regNumber} | Seller: {car.sellerName}</p>
-                      </div>
-                      <span style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', background: car.status === 'Verified & Approved' ? '#16a34a' : car.status === 'Rejected' ? '#dc2626' : '#d97706', color: '#fff' }}>
-                        Status: {car.status}
-                      </span>
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', background: '#0f172a', padding: '12px', borderRadius: '6px', fontSize: '12px', marginBottom: '15px' }}>
-                      <div>Engine Check: <strong>{car.engineStatus}</strong></div>
-                      <div>Chassis: <strong>{car.chassisStatus}</strong></div>
-                      <div>Odometer: <strong>{car.odometerStatus}</strong></div>
-                      <div>RC & Insurance: <strong>{car.rcVerified ? 'Verified' : 'Pending'}</strong></div>
-                    </div>
-
-                    {car.status === 'Pending Verification' && (
-                      <div style={{ display: 'flex', gap: '10px' }}>
-                        <button onClick={() => handleVerifyCar(car.id, true)} style={{ flex: 1, padding: '10px', background: '#16a34a', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>
-                          ✓ Approve Vehicle & Issue Trust Score
-                        </button>
-                        <button onClick={() => handleVerifyCar(car.id, false)} style={{ flex: 1, padding: '10px', background: '#dc2626', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>
-                          ✕ Reject (Fraud Risk)
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
+          ))}
         </div>
       </div>
-    </>
+
+      {/* Main Container */}
+      <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+        {/* 1. CLIENT PORTAL */}
+        {activeTab === 'client' && (
+          <div style={{ background: '#0f172a', borderRadius: '16px', padding: '32px', border: '1px solid #1e293b' }}>
+            <h2 style={{ fontSize: '18px', marginBottom: '16px' }}>Request Asset Physical Inspection</h2>
+
+            {/* Category Toggle */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '24px' }}>
+              {(['Vehicles', 'Real Estate', 'Electronics', 'Heavy Machinery'] as IndustryCategory[]).map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setCategory(cat)}
+                  style={{
+                    padding: '10px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: category === cat ? '#0284c7' : '#1e293b',
+                    color: '#fff',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handlePaymentSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div>
+                <label style={{ fontSize: '12px', color: '#94a3b8' }}>User / Business Email</label>
+                <input type="email" value={userEmail} onChange={(e) => setUserEmail(e.target.value)} style={{ width: '100%', padding: '10px', background: '#1e293b', border: '1px solid #334155', color: '#fff', borderRadius: '6px', marginTop: '4px' }} required />
+              </div>
+              <div>
+                <label style={{ fontSize: '12px', color: '#94a3b8' }}>Asset Title / Model</label>
+                <input type="text" value={itemName} onChange={(e) => setItemName(e.target.value)} style={{ width: '100%', padding: '10px', background: '#1e293b', border: '1px solid #334155', color: '#fff', borderRadius: '6px', marginTop: '4px' }} required />
+              </div>
+              <div>
+                <label style={{ fontSize: '12px', color: '#94a3b8' }}>Serial No / Registration / Deed ID</label>
+                <input type="text" value={identifierNo} onChange={(e) => setIdentifierNo(e.target.value)} style={{ width: '100%', padding: '10px', background: '#1e293b', border: '1px solid #334155', color: '#fff', borderRadius: '6px', marginTop: '4px' }} required />
+              </div>
+              <div>
+                <label style={{ fontSize: '12px', color: '#94a3b8' }}>Declared Asset Market Value (₹)</label>
+                <input type="number" value={declaredValue} onChange={(e) => setDeclaredValue(Number(e.target.value))} style={{ width: '100%', padding: '10px', background: '#1e293b', border: '1px solid #334155', color: '#fff', borderRadius: '6px', marginTop: '4px' }} required />
+              </div>
+
+              {/* Dynamic Fee Box */}
+              <div style={{ gridColumn: 'span 2', background: '#1e293b', padding: '16px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <p style={{ fontSize: '12px', color: '#94a3b8' }}>Calculated Audit Fee ({category === 'Electronics' ? '2%' : category === 'Real Estate' ? '0.5%' : '1%'})</p>
+                  <p style={{ fontSize: '20px', fontWeight: 'bold', color: '#38bdf8' }}>₹ {calculatedFee.toLocaleString()}</p>
+                </div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  style={{ padding: '12px 24px', background: 'linear-gradient(135deg, #0284c7, #2563eb)', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
+                >
+                  {loading ? 'Processing...' : `Pay ₹ ${calculatedFee.toLocaleString()} via Razorpay →`}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* 2. FIELD AUDITOR CONSOLE */}
+        {activeTab === 'auditor' && (
+          <div style={{ background: '#0f172a', borderRadius: '16px', padding: '32px', border: '1px solid #1e293b' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+              <h2 style={{ fontSize: '18px' }}>Auditor Verification Queue</h2>
+              <button
+                onClick={() => navigator.geolocation.getCurrentPosition((pos) => { setAuditorLat(pos.coords.latitude); setAuditorLng(pos.coords.longitude); })}
+                style={{ padding: '8px 16px', background: '#1e293b', border: '1px solid #334155', color: '#38bdf8', borderRadius: '6px', fontSize: '12px', cursor: 'pointer' }}
+              >
+                📍 Lock Current Auditor Location
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {items.map((item, idx) => {
+                const dist = (auditorLat && auditorLng && item.lat && item.lng) ? getDistance(auditorLat, auditorLng, item.lat, item.lng) : null;
+                return (
+                  <div key={idx} style={{ background: '#1e293b', padding: '20px', borderRadius: '12px', border: '1px solid #334155' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                      <div>
+                        <span style={{ fontSize: '10px', background: '#0284c7', padding: '2px 8px', borderRadius: '4px', textTransform: 'uppercase', fontWeight: 'bold' }}>{item.category}</span>
+                        <h3 style={{ fontSize: '16px', marginTop: '4px' }}>{item.item_name} ({item.identifier_no})</h3>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <p style={{ fontSize: '12px', color: '#22c55e', fontWeight: 'bold' }}>{item.payment_status}</p>
+                        {dist && <p style={{ fontSize: '11px', color: '#94a3b8' }}>Distance: {dist} km</p>}
+                      </div>
+                    </div>
+
+                    {/* Parameter Verification Controls */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginTop: '16px' }}>
+                      {[1, 2, 3].map((pNum) => {
+                        const status = pNum === 1 ? item.param1_status : pNum === 2 ? item.param2_status : item.param3_status;
+                        return (
+                          <div key={pNum} style={{ background: '#0f172a', padding: '12px', borderRadius: '8px' }}>
+                            <p style={{ fontSize: '11px', color: '#94a3b8' }}>Check #{pNum}</p>
+                            <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                              <button onClick={() => updateParamStatus(item, pNum, true)} style={{ flex: 1, padding: '4px', background: status === 'Pass' ? '#16a34a' : '#334155', border: 'none', color: '#fff', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }}>Pass</button>
+                              <button onClick={() => updateParamStatus(item, pNum, false)} style={{ flex: 1, padding: '4px', background: status === 'Fail' ? '#dc2626' : '#334155', border: 'none', color: '#fff', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }}>Fail</button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* 3. ADMIN DASHBOARD */}
+        {activeTab === 'admin' && (
+          <div style={{ background: '#0f172a', borderRadius: '16px', padding: '32px', border: '1px solid #1e293b' }}>
+            <h2 style={{ fontSize: '18px', marginBottom: '20px' }}>Platform Financial Overview</h2>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '24px' }}>
+              <div style={{ background: '#1e293b', padding: '20px', borderRadius: '12px' }}>
+                <p style={{ fontSize: '12px', color: '#94a3b8' }}>Gross Platform Revenue</p>
+                <h3 style={{ fontSize: '24px', color: '#38bdf8', marginTop: '4px' }}>
+                  ₹ {items.reduce((acc, curr) => acc + (curr.calculated_fee || 0), 0).toLocaleString()}
+                </h3>
+              </div>
+              <div style={{ background: '#1e293b', padding: '20px', borderRadius: '12px' }}>
+                <p style={{ fontSize: '12px', color: '#94a3b8' }}>Total Audits Requested</p>
+                <h3 style={{ fontSize: '24px', color: '#fff', marginTop: '4px' }}>{items.length}</h3>
+              </div>
+              <div style={{ background: '#1e293b', padding: '20px', borderRadius: '12px' }}>
+                <p style={{ fontSize: '12px', color: '#94a3b8' }}>Approved Rate</p>
+                <h3 style={{ fontSize: '24px', color: '#22c55e', marginTop: '4px' }}>
+                  {items.length ? Math.round((items.filter((i) => i.status === 'Verified & Approved').length / items.length) * 100) : 0}%
+                </h3>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
