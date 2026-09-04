@@ -4,635 +4,395 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 
 export default function Home() {
-  // 1. ROI Calculator State
+  // Interactive States
   const [auditorCount, setAuditorCount] = useState<number>(25);
   const [auditsPerAuditor, setAuditsPerAuditor] = useState<number>(30);
-
-  // 2. Interactive Sandbox Simulator State
   const [isSimulating, setIsSimulating] = useState<boolean>(false);
-  const [simResult, setSimResult] = useState<{
-    hash: string;
-    lat: number;
-    lng: number;
-    spoofDetected: boolean;
-    timestamp: string;
-  } | null>(null);
-
-  // 3. Pricing Toggle State
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
-
-  // 4. FAQ Accordion State
+  const [simResult, setSimResult] = useState<boolean>(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('annual');
 
-  // 5. Contact Form State
-  const [formSubmitted, setFormSubmitted] = useState<boolean>(false);
-
-  // Calculations for ROI Calculator
-  const totalAudits = auditorCount * auditsPerAuditsPerMonth(auditsPerAuditor);
-  const monthlySavings = totalAudits * 180; // Estimated INR saved per audit in fraud prevention & manual labor
+  // Calculations
+  const totalAudits = auditorCount * auditsPerAuditor;
+  const monthlySavings = totalAudits * 180;
   const annualSavings = monthlySavings * 12;
 
-  function auditsPerAuditsPerMonth(val: number) {
-    return val;
-  }
-
-  // Handle Simulation Run
-  const handleRunSimulation = () => {
+  const handleSimulate = () => {
     setIsSimulating(true);
-    setSimResult(null);
+    setSimResult(false);
     setTimeout(() => {
       setIsSimulating(false);
-      setSimResult({
-        hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
-        lat: 12.9172,
-        lng: 77.6228,
-        spoofDetected: false,
-        timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
-      });
+      setSimResult(true);
     }, 1200);
   };
 
-  const faqs = [
-    {
-      q: 'How does Spotverify detect mock locations and GPS spoofing?',
-      a: 'Spotverify interfaces with native hardware location providers and cross-examines mock location provider flags, mock app detection rules, speed velocity anomalies, and satellite signal strength metrics to block spoofed coordinates.',
-    },
-    {
-      q: 'What is SHA-256 Photo Hash Verification?',
-      a: 'When an auditor takes a picture in our app, the raw image data and GPS EXIF metadata are instantly converted into a unique 64-character cryptographic hash. Any subsequent tampering or image editing breaks this signature, flagging fraud immediately.',
-    },
-    {
-      q: 'Can auditors perform field site inspections offline?',
-      a: 'Yes. In low-network areas, audit photos and GPS hashes are saved into local encrypted browser storage (IndexedDB) and automatically sync to our database once connectivity is restored.',
-    },
-    {
-      q: 'How do task payouts and settlements work?',
-      a: 'Once an audit passes anti-spoofing and hash validation, a verified settlement invoice is generated. Finance admins can disburse payments directly via our Razorpay integration or export payout files to your ERP.',
-    },
-    {
-      q: 'Is Spotverify compliant with enterprise data protection standards?',
-      a: 'Spotverify enforces Row-Level Security (RLS) policies, end-to-end database encryption, SOC2-type access logs, and strict privacy compliance.',
-    },
-  ];
-
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between selection:bg-emerald-500 selection:text-slate-950 font-sans">
+    <div style={{ backgroundColor: '#070b14', color: '#f8fafc', minHeight: '100vh', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       
       {/* 1. TOP NAVIGATION BAR */}
-      <header className="sticky top-0 z-50 backdrop-blur-md bg-slate-950/85 border-b border-slate-800/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      <header style={{ position: 'sticky', top: 0, zIndex: 100, backgroundColor: 'rgba(7, 11, 20, 0.92)', backdropFilter: 'blur(12px)', borderBottom: '1px solid #1e293b', padding: '14px 20px' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           
-          {/* Logo & Brand Name */}
-          <Link href="/" className="flex items-center space-x-3 group">
-            <div className="relative h-10 w-10 overflow-hidden rounded-xl bg-slate-900 border border-slate-800 p-1 transition-transform group-hover:scale-105">
-              <img 
-                src="/logo.png" 
-                alt="Spotverify Logo" 
-                className="h-full w-full object-contain"
-              />
+          {/* Logo & Brand */}
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '12px', textDecoration: 'none' }}>
+            <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'linear-gradient(135deg, #10b981 0%, #06b6d4 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(16, 185, 129, 0.4)' }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#041d14" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 6L9 17l-5-5"/>
+              </svg>
             </div>
-            <span className="font-bold text-2xl tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
-              Spotverify
-            </span>
-            <span className="hidden md:inline-block px-2.5 py-0.5 text-xs font-semibold rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-              Enterprise SaaS
-            </span>
+            <div>
+              <span style={{ fontSize: '22px', fontWeight: '900', color: '#ffffff', letterSpacing: '-0.5px', display: 'block', lineHeight: '1.1' }}>
+                Spotverify
+              </span>
+              <span style={{ fontSize: '10px', color: '#10b981', fontWeight: '700', letterSpacing: '1px', textTransform: 'uppercase' }}>
+                TRUSTED FIELD ENGINE
+              </span>
+            </div>
           </Link>
 
-          {/* Navigation Links */}
-          <nav className="hidden lg:flex items-center space-x-8 text-sm font-medium text-slate-300">
-            <a href="#demo" className="hover:text-emerald-400 transition-colors">Live Demo</a>
-            <a href="#roi" className="hover:text-emerald-400 transition-colors">ROI Calculator</a>
-            <a href="#features" className="hover:text-emerald-400 transition-colors">Capabilities</a>
-            <a href="#workflow" className="hover:text-emerald-400 transition-colors">How It Works</a>
-            <a href="#pricing" className="hover:text-emerald-400 transition-colors">Pricing</a>
-            <a href="#faq" className="hover:text-emerald-400 transition-colors">FAQ</a>
+          {/* Quick Nav Links */}
+          <nav style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+            <a href="#how-it-works" style={{ color: '#cbd5e1', fontSize: '14px', textDecoration: 'none', fontWeight: '500' }}>How It Works</a>
+            <a href="#demo" style={{ color: '#cbd5e1', fontSize: '14px', textDecoration: 'none', fontWeight: '500' }}>Live Test</a>
+            <a href="#pricing" style={{ color: '#cbd5e1', fontSize: '14px', textDecoration: 'none', fontWeight: '500' }}>Pricing</a>
           </nav>
 
           {/* Action CTAs */}
-          <div className="flex items-center space-x-3">
-            <Link
-              href="/login"
-              className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white transition-colors"
-            >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <Link href="/login" style={{ padding: '9px 18px', borderRadius: '10px', fontSize: '13px', color: '#f8fafc', textDecoration: 'none', fontWeight: '600', border: '1px solid #334155', background: '#0f172a' }}>
               Sign In
             </Link>
-            <Link
-              href="/audit"
-              className="px-4 py-2 text-sm font-semibold rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 hover:brightness-110 transition-all shadow-lg shadow-emerald-500/20"
-            >
-              Launch Portal
+            <Link href="/audit" style={{ padding: '9px 18px', borderRadius: '10px', fontSize: '13px', color: '#041d14', textDecoration: 'none', fontWeight: '800', background: 'linear-gradient(135deg, #10b981, #06b6d4)', boxShadow: '0 4px 15px rgba(16, 185, 129, 0.3)' }}>
+              Launch Engine
             </Link>
           </div>
+
         </div>
       </header>
 
-      {/* MAIN BODY CONTENT */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-28">
+      {/* 2. HERO SECTION WITH VIBRANT DASHBOARD PREVIEW */}
+      <section style={{ maxWidth: '1200px', margin: '0 auto', padding: '60px 20px 40px', textAlign: 'center' }}>
         
-        {/* 2. HERO SECTION */}
-        <section className="text-center space-y-8 max-w-4xl mx-auto pt-6">
+        {/* Trust Pill */}
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 16px', borderRadius: '30px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', marginBottom: '24px' }}>
+          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 10px #10b981' }}></span>
+          <span style={{ fontSize: '12px', color: '#34d399', fontWeight: '700', letterSpacing: '0.5px' }}>
+            🛡️ 100% Anti-Spoofing &amp; Fake Location Prevention
+          </span>
+        </div>
+
+        {/* Main Title */}
+        <h1 style={{ fontSize: '42px', fontWeight: '900', lineHeight: '1.15', color: '#ffffff', maxWidth: '900px', margin: '0 auto 20px', letterSpacing: '-1px' }}>
+          Know Exactly <span style={{ background: 'linear-gradient(135deg, #10b981 0%, #38bdf8 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Where &amp; When</span> Your Field Work Happening
+        </h1>
+
+        <p style={{ fontSize: '17px', color: '#94a3b8', maxWidth: '720px', margin: '0 auto 32px', lineHeight: '1.6' }}>
+          Spotverify stops fake GPS check-ins, edited site photos, and audit fraud. Your field team gets instant location verification and automatic payment settlements.
+        </p>
+
+        {/* Hero CTAs */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '14px', flexWrap: 'wrap', marginBottom: '50px' }}>
+          <Link href="/audit" style={{ padding: '16px 32px', borderRadius: '12px', background: 'linear-gradient(135deg, #10b981, #059669)', color: '#041d14', fontWeight: '800', fontSize: '16px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '10px', boxShadow: '0 8px 30px rgba(16, 185, 129, 0.35)' }}>
+            <span>Try Live Field Audit</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </Link>
+          <a href="#roi" style={{ padding: '16px 28px', borderRadius: '12px', background: '#1e293b', border: '1px solid #334155', color: '#ffffff', fontWeight: '700', fontSize: '16px', textDecoration: 'none' }}>
+            Calculate Savings
+          </a>
+        </div>
+
+        {/* VISUAL DASHBOARD MOCKUP CARD */}
+        <div style={{ background: 'linear-gradient(180deg, #111827 0%, #0b0f19 100%)', border: '1px solid #1f293d', borderRadius: '24px', padding: '24px', maxWidth: '950px', margin: '0 auto', boxShadow: '0 25px 60px rgba(0,0,0,0.6)', textAlign: 'left' }}>
           
-          <div className="flex justify-center">
-            <div className="relative inline-flex items-center justify-center p-2 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-2xl backdrop-blur-md">
-              <img 
-                src="/logo.png" 
-                alt="Spotverify Logo Visual" 
-                className="h-16 sm:h-20 w-auto object-contain rounded-lg"
-              />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #1f293d', paddingBottom: '16px', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', itemsCenter: 'center', gap: '10px' }}>
+              <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ef4444', display: 'inline-block' }}></span>
+              <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#f59e0b', display: 'inline-block' }}></span>
+              <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }}></span>
+              <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginLeft: '10px' }}>LIVE VERIFICATION FEED #AUD-9982</span>
             </div>
+            <span style={{ fontSize: '11px', background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', padding: '4px 12px', borderRadius: '20px', fontWeight: '700', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+              ● REAL-TIME ACTIVE
+            </span>
           </div>
 
-          <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-xs text-slate-300">
-            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span>Real-time Field Workforce & Anti-Spoofing Engine</span>
-          </div>
-
-          <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-tight">
-            Zero-Trust Field Verification &amp; Tamper-Proof Audit Logs
-          </h1>
-
-          <p className="text-slate-400 text-base sm:text-xl max-w-2xl mx-auto leading-relaxed">
-            Eliminate location spoofing, collateral fraud, and manual audit lag. Spotverify provides hardware GPS validation, SHA-256 photo hashing, and instant automated task settlements.
-          </p>
-
-          {/* CTAs */}
-          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-4 max-w-md mx-auto">
-            <Link
-              href="/audit"
-              className="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-bold hover:brightness-110 transition-all shadow-xl shadow-emerald-500/25 flex items-center justify-center space-x-2"
-            >
-              <span>Launch Field Engine</span>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
-              </svg>
-            </Link>
-
-            <Link
-              href="/checkout"
-              className="w-full sm:w-auto px-8 py-4 rounded-xl bg-slate-900 border border-slate-700 hover:border-slate-500 text-slate-200 font-semibold transition-all flex items-center justify-center space-x-2"
-            >
-              <span>Settlement Checkout</span>
-            </Link>
-          </div>
-
-          {/* LIVE METRICS TICKER */}
-          <div className="pt-8 grid grid-cols-2 md:grid-cols-4 gap-4 text-center border-t border-slate-800/80 max-w-3xl mx-auto">
-            <div className="space-y-1">
-              <div className="text-2xl font-black text-white">150,000+</div>
-              <div className="text-xs text-slate-400">Audits Verified</div>
-            </div>
-            <div className="space-y-1">
-              <div className="text-2xl font-black text-emerald-400">99.98%</div>
-              <div className="text-xs text-slate-400">Spoof Prevention</div>
-            </div>
-            <div className="space-y-1">
-              <div className="text-2xl font-black text-white">&lt;100ms</div>
-              <div className="text-xs text-slate-400">SHA-256 Hash Speed</div>
-            </div>
-            <div className="space-y-1">
-              <div className="text-2xl font-black text-cyan-400">100%</div>
-              <div className="text-xs text-slate-400">Audit Compliance</div>
-            </div>
-          </div>
-
-          {/* SECURITY BADGES */}
-          <div className="pt-4 flex flex-wrap items-center justify-center gap-6 text-xs text-slate-500 font-semibold tracking-wider uppercase">
-            <span>&bull; ISO 27001 Ready</span>
-            <span>&bull; SHA-256 Encrypted</span>
-            <span>&bull; SOC2 Access Control</span>
-            <span>&bull; Row-Level Security</span>
-          </div>
-
-        </section>
-
-        {/* 3. INTERACTIVE VERIFICATION SANDBOX */}
-        <section id="demo" className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 sm:p-10 space-y-8 scroll-mt-24">
-          <div className="text-center space-y-2 max-w-2xl mx-auto">
-            <h2 className="text-xs font-bold tracking-widest text-emerald-400 uppercase">Live Sandbox Simulator</h2>
-            <p className="text-3xl font-bold text-white">Test Spotverify Anti-Spoofing Engine</p>
-            <p className="text-slate-400 text-sm">Simulate a real-time site audit submission to inspect coordinate validation and digital cryptographic hashing.</p>
-          </div>
-
-          <div className="max-w-xl mx-auto bg-slate-950 border border-slate-800 rounded-2xl p-6 space-y-6">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-              <div className="flex items-center space-x-2">
-                <span className="h-3 w-3 rounded-full bg-emerald-500"></span>
-                <span className="text-xs font-mono text-slate-300">Auditor Session: #AUD-8821</span>
-              </div>
-              <span className="text-xs bg-slate-900 border border-slate-800 px-2 py-1 rounded text-slate-400">Target: GB Palya, Bengaluru</span>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+            
+            <div style={{ background: '#1e293b', padding: '16px', borderRadius: '14px', borderLeft: '5px solid #10b981' }}>
+              <div style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Location Status</div>
+              <div style={{ fontSize: '16px', fontWeight: '800', color: '#34d399', marginTop: '6px' }}>✓ GENUINE GPS (NO SPOOF)</div>
+              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>GB Palya, Bengaluru (Accuracy: 2.1m)</div>
             </div>
 
-            <button
-              onClick={handleRunSimulation}
-              disabled={isSimulating}
-              className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-400 disabled:bg-slate-800 text-slate-950 font-bold rounded-xl transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center space-x-2"
-            >
-              {isSimulating ? (
-                <span>Validating Hardware GPS &amp; Hash...</span>
-              ) : (
-                <span>Simulate Field Audit Check-In</span>
-              )}
-            </button>
+            <div style={{ background: '#1e293b', padding: '16px', borderRadius: '14px', borderLeft: '5px solid #06b6d4' }}>
+              <div style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Photo Authenticity</div>
+              <div style={{ fontSize: '16px', fontWeight: '800', color: '#38bdf8', marginTop: '6px' }}>🔒 SHA-256 SEALED</div>
+              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>Original Image • No Photoshop Detected</div>
+            </div>
 
-            {simResult && (
-              <div className="space-y-3 bg-slate-900/80 border border-emerald-500/30 rounded-xl p-4 text-xs font-mono">
-                <div className="flex justify-between text-emerald-400 font-bold">
-                  <span>[STATUS]: VERIFIED_GENUINE</span>
-                  <span>MOCK_LOCATION: NONE</span>
-                </div>
-                <div><span className="text-slate-500">LAT/LNG:</span> {simResult.lat}, {simResult.lng}</div>
-                <div><span className="text-slate-500">TIMESTAMP:</span> {simResult.timestamp}</div>
-                <div className="truncate"><span className="text-slate-500">SHA-256:</span> {simResult.hash}</div>
-              </div>
-            )}
-          </div>
-        </section>
+            <div style={{ background: '#1e293b', padding: '16px', borderRadius: '14px', borderLeft: '5px solid #8b5cf6' }}>
+              <div style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Automated Settlement</div>
+              <div style={{ fontSize: '16px', fontWeight: '800', color: '#a78bfa', marginTop: '6px' }}>⚡ APPROVED FOR PAYOUT</div>
+              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>Invoice #992 generated via Razorpay</div>
+            </div>
 
-        {/* 4. INTERACTIVE ROI CALCULATOR */}
-        <section id="roi" className="bg-gradient-to-b from-slate-900/80 to-slate-950 border border-slate-800 rounded-3xl p-6 sm:p-10 space-y-8 scroll-mt-24">
-          <div className="text-center space-y-2 max-w-2xl mx-auto">
-            <h2 className="text-xs font-bold tracking-widest text-emerald-400 uppercase">Savings Estimator</h2>
-            <p className="text-3xl font-bold text-white">Calculate Your Enterprise ROI</p>
-            <p className="text-slate-400 text-sm">See how much Spotverify saves your workforce in fraud prevention and manual review costs.</p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8 items-center max-w-4xl mx-auto">
-            <div className="space-y-6 bg-slate-950 border border-slate-800 p-6 rounded-2xl">
-              
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm font-medium">
-                  <span className="text-slate-300">Active Field Auditors</span>
-                  <span className="text-emerald-400 font-bold">{auditorCount} Auditors</span>
-                </div>
-                <input
-                  type="range"
-                  min="5"
-                  max="200"
-                  value={auditorCount}
-                  onChange={(e) => setAuditorCount(Number(e.target.value))}
-                  className="w-full accent-emerald-500 bg-slate-800 rounded-lg h-2 cursor-pointer"
-                />
-              </div>
+        </div>
 
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm font-medium">
-                  <span className="text-slate-300">Audits per Auditor / Month</span>
-                  <span className="text-emerald-400 font-bold">{auditsPerAuditor} Audits</span>
-                </div>
-                <input
-                  type="range"
-                  min="10"
-                  max="100"
-                  value={auditsPerAuditor}
-                  onChange={(e) => setAuditsPerAuditor(Number(e.target.value))}
-                  className="w-full accent-emerald-500 bg-slate-800 rounded-lg h-2 cursor-pointer"
-                />
+      </section>
+
+      {/* 3. TRUST & SECURITY BADGES STRIP */}
+      <section style={{ borderTop: '1px solid #1e293b', borderBottom: '1px solid #1e293b', background: '#0f172a', padding: '24px 20px' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '20px', textAlign: 'center' }}>
+          <div>
+            <div style={{ fontSize: '26px', fontWeight: '900', color: '#ffffff' }}>150,000+</div>
+            <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>Field Audits Verified</div>
+          </div>
+          <div>
+            <div style={{ fontSize: '26px', fontWeight: '900', color: '#34d399' }}>99.98%</div>
+            <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>Spoof Detection Rate</div>
+          </div>
+          <div>
+            <div style={{ fontSize: '26px', fontWeight: '900', color: '#38bdf8' }}>&lt;100ms</div>
+            <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>Cryptographic Hash Speed</div>
+          </div>
+          <div>
+            <div style={{ fontSize: '26px', fontWeight: '900', color: '#fbbf24' }}>100%</div>
+            <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>Tamper-Proof Integrity</div>
+          </div>
+        </div>
+      </section>
+
+      {/* 4. OLD WAY VS SPOTVERIFY WAY (EASY TO UNDERSTAND) */}
+      <section id="how-it-works" style={{ maxWidth: '1100px', margin: '70px auto 0', padding: '0 20px' }}>
+        
+        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+          <span style={{ color: '#38bdf8', fontSize: '12px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '1px' }}>WHY YOU NEED SPOTVERIFY</span>
+          <h2 style={{ fontSize: '30px', fontWeight: '900', color: '#ffffff', marginTop: '6px' }}>The Difference Spotverify Makes</h2>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+          
+          {/* Old Way - Bad */}
+          <div style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: '20px', padding: '28px' }}>
+            <div style={{ display: 'inline-block', padding: '6px 12px', borderRadius: '8px', background: '#ef4444', color: '#ffffff', fontWeight: '800', fontSize: '12px', marginBottom: '16px' }}>
+              ❌ Without Spotverify (High Risk)
+            </div>
+            <ul style={{ paddingLeft: '20px', fontSize: '14px', color: '#cbd5e1', lineHeight: '2' }}>
+              <li>Auditors use Fake GPS apps from home</li>
+              <li>Photos are edited or taken from computer screens</li>
+              <li>Managers spend hours manually checking location calls</li>
+              <li>Fake payouts waste company money and trust</li>
+            </ul>
+          </div>
+
+          {/* Spotverify Way - Good */}
+          <div style={{ background: 'rgba(16, 185, 129, 0.08)', border: '2px solid #10b981', borderRadius: '20px', padding: '28px', boxShadow: '0 10px 30px rgba(16,185,129,0.1)' }}>
+            <div style={{ display: 'inline-block', padding: '6px 12px', borderRadius: '8px', background: '#10b981', color: '#041d14', fontWeight: '800', fontSize: '12px', marginBottom: '16px' }}>
+              ✅ With Spotverify (Zero-Trust Protection)
+            </div>
+            <ul style={{ paddingLeft: '20px', fontSize: '14px', color: '#ffffff', lineHeight: '2' }}>
+              <li>Hardware GPS checks block mock location apps instantly</li>
+              <li>SHA-256 digital seals lock photo &amp; time metadata</li>
+              <li>Live verification dashboard updates in real-time</li>
+              <li>Automatic payouts disburse only for 100% verified audits</li>
+            </ul>
+          </div>
+
+        </div>
+
+      </section>
+
+      {/* 5. INTERACTIVE LIVE SANDBOX DEMO */}
+      <section id="demo" style={{ maxWidth: '850px', margin: '80px auto 0', padding: '0 20px' }}>
+        
+        <div style={{ background: 'linear-gradient(180deg, #111827 0%, #070b14 100%)', border: '1px solid #1f293d', borderRadius: '24px', padding: '36px' }}>
+          
+          <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+            <span style={{ color: '#10b981', fontSize: '12px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '1px' }}>TRY IT YOURSELF</span>
+            <h2 style={{ fontSize: '26px', fontWeight: '900', color: '#ffffff', marginTop: '6px' }}>Test Our Verification Engine Right Now</h2>
+            <p style={{ fontSize: '14px', color: '#94a3b8' }}>Click the button below to run a simulated location and photo audit check-in.</p>
+          </div>
+
+          <button 
+            onClick={handleSimulate}
+            disabled={isSimulating}
+            style={{ width: '100%', padding: '16px', borderRadius: '12px', background: 'linear-gradient(135deg, #10b981, #06b6d4)', color: '#041d14', fontWeight: '800', fontSize: '16px', border: 'none', cursor: 'pointer' }}
+          >
+            {isSimulating ? 'Validating Hardware GPS & SHA-256 Digital Seal...' : 'Run Simulated Field Check-In'}
+          </button>
+
+          {simResult && (
+            <div style={{ marginTop: '20px', padding: '20px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '14px', fontSize: '13px', color: '#34d399', fontFamily: 'monospace', lineHeight: '1.8' }}>
+              <div><strong>[STATUS]:</strong> 200 OK — GENUINE AUDIT VERIFIED</div>
+              <div><strong>[GPS COORD]:</strong> 12.9172° N, 77.6228° E (GB Palya, Bengaluru)</div>
+              <div><strong>[SPOOF DETECTION]:</strong> PASSED (Hardware Provider Verified)</div>
+              <div><strong>[SHA-256 DIGITAL SEAL]:</strong> e3b0c44298fc1c149afbf4c8996fb92427ae41e4</div>
+            </div>
+          )}
+
+        </div>
+
+      </section>
+
+      {/* 6. INTERACTIVE ROI COST CALCULATOR */}
+      <section id="roi" style={{ maxWidth: '900px', margin: '80px auto 0', padding: '0 20px' }}>
+        
+        <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '24px', padding: '36px' }}>
+          
+          <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+            <span style={{ color: '#38bdf8', fontSize: '12px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '1px' }}>ENTERPRISE ROI CALCULATOR</span>
+            <h2 style={{ fontSize: '26px', fontWeight: '900', color: '#ffffff', marginTop: '6px' }}>See How Much Spotverify Saves You</h2>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '30px', alignItems: 'center' }}>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div>
+                <label style={{ fontSize: '13px', color: '#cbd5e1', display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <span>Number of Field Auditors</span>
+                  <strong style={{ color: '#10b981' }}>{auditorCount} Auditors</strong>
+                </label>
+                <input type="range" min="5" max="200" value={auditorCount} onChange={(e) => setAuditorCount(Number(e.target.value))} style={{ width: '100%', accentColor: '#10b981' }} />
               </div>
 
-              <div className="pt-2 border-t border-slate-800 text-xs text-slate-400">
-                Calculated on {totalAudits.toLocaleString()} monthly site audits across your enterprise network.
+              <div>
+                <label style={{ fontSize: '13px', color: '#cbd5e1', display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <span>Audits per Auditor / Month</span>
+                  <strong style={{ color: '#10b981' }}>{auditsPerAuditor} Audits</strong>
+                </label>
+                <input type="range" min="10" max="100" value={auditsPerAuditor} onChange={(e) => setAuditsPerAuditor(Number(e.target.value))} style={{ width: '100%', accentColor: '#10b981' }} />
               </div>
             </div>
 
-            <div className="bg-emerald-950/30 border border-emerald-500/30 rounded-2xl p-6 text-center space-y-4">
-              <div className="text-slate-300 text-sm font-semibold">Estimated Annual Fraud &amp; Overhead Savings</div>
-              <div className="text-4xl sm:text-5xl font-black text-emerald-400">
+            <div style={{ background: '#1e293b', padding: '24px', borderRadius: '18px', textAlign: 'center', border: '1px solid #334155' }}>
+              <div style={{ fontSize: '13px', color: '#94a3b8' }}>Estimated Annual Fraud &amp; Overhead Savings</div>
+              <div style={{ fontSize: '36px', fontWeight: '900', color: '#34d399', margin: '10px 0' }}>
                 ₹{annualSavings.toLocaleString()}
               </div>
-              <p className="text-xs text-slate-400">
-                Eliminating fake check-ins saves your team approx. ₹{monthlySavings.toLocaleString()} / month.
-              </p>
-              <Link
-                href="#pricing"
-                className="inline-block px-6 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-sm transition-all"
-              >
-                Choose Your Plan
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        {/* 5. WORKFLOW ARCHITECTURE */}
-        <section id="workflow" className="space-y-12 scroll-mt-24">
-          <div className="text-center space-y-3">
-            <h2 className="text-xs font-bold tracking-widest text-emerald-400 uppercase">Verification Architecture</h2>
-            <p className="text-3xl font-bold text-white">How Spotverify Protects Every Field Check-In</p>
-          </div>
-
-          <div className="grid md:grid-cols-4 gap-6">
-            
-            <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 space-y-3 relative">
-              <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold text-lg border border-emerald-500/20">
-                01
-              </div>
-              <h3 className="text-lg font-bold text-white">GPS Check-In</h3>
-              <p className="text-slate-400 text-xs leading-relaxed">
-                Auditors capture photos via the browser app. Native device sensors check for mock location software.
-              </p>
-            </div>
-
-            <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 space-y-3 relative">
-              <div className="h-10 w-10 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center font-bold text-lg border border-cyan-500/20">
-                02
-              </div>
-              <h3 className="text-lg font-bold text-white">SHA-256 Hashing</h3>
-              <p className="text-slate-400 text-xs leading-relaxed">
-                Photo bytes and geocoordinates are cryptographically hashed, rendering records tamper-evident.
-              </p>
-            </div>
-
-            <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 space-y-3 relative">
-              <div className="h-10 w-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center font-bold text-lg border border-indigo-500/20">
-                03
-              </div>
-              <h3 className="text-lg font-bold text-white">Supabase RLS</h3>
-              <p className="text-slate-400 text-xs leading-relaxed">
-                Data is locked behind enterprise Row-Level Security policies, accessible only to verified tenant admins.
-              </p>
-            </div>
-
-            <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 space-y-3 relative">
-              <div className="h-10 w-10 rounded-xl bg-teal-500/10 text-teal-400 flex items-center justify-center font-bold text-lg border border-teal-500/20">
-                04
-              </div>
-              <h3 className="text-lg font-bold text-white">Settlement</h3>
-              <p className="text-slate-400 text-xs leading-relaxed">
-                Verified task completion triggers automated disbursement via Razorpay settlement order APIs.
-              </p>
+              <div style={{ fontSize: '12px', color: '#64748b' }}>Based on {totalAudits.toLocaleString()} audits every month</div>
             </div>
 
           </div>
-        </section>
 
-        {/* 6. CORE CAPABILITIES GRID */}
-        <section id="features" className="space-y-12 scroll-mt-24">
-          <div className="text-center space-y-3">
-            <h2 className="text-xs font-bold tracking-widest text-emerald-400 uppercase">Enterprise Capabilities</h2>
-            <p className="text-3xl font-bold text-white">Engineered for High-Stakes Operations</p>
-          </div>
+        </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
-            
-            <div className="bg-slate-900/40 border border-slate-800 p-6 rounded-2xl space-y-3">
-              <div className="text-emerald-400 font-bold text-base">Hardware Geofencing</div>
-              <p className="text-slate-400 text-xs leading-relaxed">Restricts task submissions to strict radial coordinates surrounding targeted collateral or audit sites.</p>
-            </div>
+      </section>
 
-            <div className="bg-slate-900/40 border border-slate-800 p-6 rounded-2xl space-y-3">
-              <div className="text-emerald-400 font-bold text-base">Anti-Spoof Velocity Engine</div>
-              <p className="text-slate-400 text-xs leading-relaxed">Flags impossible travel speeds between consecutive check-ins to catch location spoofers.</p>
-            </div>
+      {/* 7. PRICING SUBSCRIPTIONS */}
+      <section id="pricing" style={{ maxWidth: '1100px', margin: '80px auto 0', padding: '0 20px' }}>
+        
+        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+          <span style={{ color: '#10b981', fontSize: '12px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '1px' }}>TRANSPARENT PRICING</span>
+          <h2 style={{ fontSize: '30px', fontWeight: '900', color: '#ffffff', marginTop: '6px' }}>Choose the Right Plan for Your Field Operations</h2>
+        </div>
 
-            <div className="bg-slate-900/40 border border-slate-800 p-6 rounded-2xl space-y-3">
-              <div className="text-emerald-400 font-bold text-base">Cryptographic Proofs</div>
-              <p className="text-slate-400 text-xs leading-relaxed">SHA-256 signatures guarantee photo metadata was not doctored or repurposed from prior audits.</p>
-            </div>
-
-            <div className="bg-slate-900/40 border border-slate-800 p-6 rounded-2xl space-y-3">
-              <div className="text-emerald-400 font-bold text-base">Offline Caching &amp; Sync</div>
-              <p className="text-slate-400 text-xs leading-relaxed">Captures site photo proofs without internet signal and uploads automatically when connected.</p>
-            </div>
-
-            <div className="bg-slate-900/40 border border-slate-800 p-6 rounded-2xl space-y-3">
-              <div className="text-emerald-400 font-bold text-base">Razorpay Settlements</div>
-              <p className="text-slate-400 text-xs leading-relaxed">Integrated payment settlement pipeline for instant auditor compensation upon task approval.</p>
-            </div>
-
-            <div className="bg-slate-900/40 border border-slate-800 p-6 rounded-2xl space-y-3">
-              <div className="text-emerald-400 font-bold text-base">Row-Level Security (RLS)</div>
-              <p className="text-slate-400 text-xs leading-relaxed">Database access policies isolate tenant records, ensuring zero data leakage between enterprise clients.</p>
-            </div>
-
-          </div>
-        </section>
-
-        {/* 7. PRICING TIERS */}
-        <section id="pricing" className="space-y-12 scroll-mt-24">
-          <div className="text-center space-y-3">
-            <h2 className="text-xs font-bold tracking-widest text-emerald-400 uppercase">SaaS Subscriptions</h2>
-            <p className="text-3xl font-bold text-white">Transparent Pricing for Field Workforces</p>
-            
-            <div className="pt-4 flex items-center justify-center space-x-4">
-              <span className={`text-sm ${billingCycle === 'monthly' ? 'text-white font-bold' : 'text-slate-400'}`}>Monthly</span>
-              <button 
-                onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'annual' : 'monthly')}
-                className="w-12 h-6 bg-slate-800 rounded-full p-1 border border-slate-700 transition-colors"
-              >
-                <div className={`w-4 h-4 bg-emerald-400 rounded-full transition-transform ${billingCycle === 'annual' ? 'translate-x-6' : 'translate-x-0'}`}></div>
-              </button>
-              <span className={`text-sm ${billingCycle === 'annual' ? 'text-white font-bold' : 'text-slate-400'}`}>
-                Annual <span className="text-xs text-emerald-400 font-normal">(Save 20%)</span>
-              </span>
-            </div>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            
-            {/* Starter */}
-            <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-8 space-y-6 flex flex-col justify-between">
-              <div className="space-y-4">
-                <h3 className="text-xl font-bold text-white">Starter SaaS</h3>
-                <p className="text-slate-400 text-xs">For small regional teams testing field audit workflows.</p>
-                <div className="text-3xl font-extrabold text-white">
-                  {billingCycle === 'monthly' ? '₹2,499' : '₹1,999'} <span className="text-xs font-normal text-slate-400">/ month</span>
-                </div>
-                <ul className="space-y-3 text-xs text-slate-300 pt-2">
-                  <li className="flex items-center space-x-2">
-                    <span className="text-emerald-400">&check;</span>
-                    <span>Up to 100 Field Audits / month</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <span className="text-emerald-400">&check;</span>
-                    <span>Basic GPS Verification</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <span className="text-emerald-400">&check;</span>
-                    <span>Standard Email Support</span>
-                  </li>
-                </ul>
-              </div>
-              <Link href="/checkout" className="w-full py-3 text-center bg-slate-800 hover:bg-slate-700 text-white font-semibold rounded-xl text-sm transition-all">
-                Get Started
-              </Link>
-            </div>
-
-            {/* Pro - Featured */}
-            <div className="bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-emerald-500 rounded-2xl p-8 space-y-6 flex flex-col justify-between relative shadow-2xl shadow-emerald-500/10">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-emerald-500 text-slate-950 font-extrabold text-xs px-3 py-0.5 rounded-full uppercase tracking-wider">
-                Recommended
-              </div>
-              <div className="space-y-4">
-                <h3 className="text-xl font-bold text-white">Pro Enterprise</h3>
-                <p className="text-slate-400 text-xs">For growing audit networks &amp; financial institutions.</p>
-                <div className="text-3xl font-extrabold text-white">
-                  {billingCycle === 'monthly' ? '₹7,999' : '₹6,399'} <span className="text-xs font-normal text-slate-400">/ month</span>
-                </div>
-                <ul className="space-y-3 text-xs text-slate-300 pt-2">
-                  <li className="flex items-center space-x-2">
-                    <span className="text-emerald-400">&check;</span>
-                    <span>Up to 1,000 Field Audits / month</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <span className="text-emerald-400">&check;</span>
-                    <span>SHA-256 Cryptographic Hashing</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <span className="text-emerald-400">&check;</span>
-                    <span>Anti-Spoof Velocity Engine</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <span className="text-emerald-400">&check;</span>
-                    <span>Razorpay Settlement Gateway</span>
-                  </li>
-                </ul>
-              </div>
-              <Link href="/checkout" className="w-full py-3 text-center bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-sm transition-all shadow-lg shadow-emerald-500/20">
-                Launch Pro Subscription
-              </Link>
-            </div>
-
-            {/* Custom */}
-            <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-8 space-y-6 flex flex-col justify-between">
-              <div className="space-y-4">
-                <h3 className="text-xl font-bold text-white">Custom ERP</h3>
-                <p className="text-slate-400 text-xs">For enterprise-scale field operations.</p>
-                <div className="text-3xl font-extrabold text-white">Custom</div>
-                <ul className="space-y-3 text-xs text-slate-300 pt-2">
-                  <li className="flex items-center space-x-2">
-                    <span className="text-emerald-400">&check;</span>
-                    <span>Unlimited Field Audits</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <span className="text-emerald-400">&check;</span>
-                    <span>Dedicated Database Instance</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <span className="text-emerald-400">&check;</span>
-                    <span>Custom ERP Webhooks &amp; SLA</span>
-                  </li>
-                </ul>
-              </div>
-              <a href="#contact" className="w-full py-3 text-center bg-slate-800 hover:bg-slate-700 text-white font-semibold rounded-xl text-sm transition-all">
-                Contact Enterprise Sales
-              </a>
-            </div>
-
-          </div>
-        </section>
-
-        {/* 8. FREQUENTLY ASKED QUESTIONS */}
-        <section id="faq" className="space-y-8 max-w-3xl mx-auto scroll-mt-24">
-          <div className="text-center space-y-3">
-            <h2 className="text-xs font-bold tracking-widest text-emerald-400 uppercase">Knowledge Base</h2>
-            <p className="text-3xl font-bold text-white">Frequently Asked Questions</p>
-          </div>
-
-          <div className="space-y-4">
-            {faqs.map((faq, idx) => (
-              <div key={idx} className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden">
-                <button
-                  onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
-                  className="w-full p-5 text-left flex items-center justify-between text-sm font-semibold text-white focus:outline-none"
-                >
-                  <span>{faq.q}</span>
-                  <span className="text-emerald-400 text-lg font-bold ml-4">
-                    {openFaq === idx ? '−' : '+'}
-                  </span>
-                </button>
-                {openFaq === idx && (
-                  <div className="px-5 pb-5 text-xs text-slate-400 leading-relaxed border-t border-slate-800/60 pt-3">
-                    {faq.a}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* 9. CONTACT & INQUIRY FORM */}
-        <section id="contact" className="space-y-8 max-w-2xl mx-auto scroll-mt-24">
-          <div className="text-center space-y-3">
-            <h2 className="text-xs font-bold tracking-widest text-emerald-400 uppercase">Get Started</h2>
-            <p className="text-3xl font-bold text-white">Request Enterprise Onboarding</p>
-          </div>
-
-          {formSubmitted ? (
-            <div className="bg-emerald-950/40 border border-emerald-500/40 p-8 rounded-2xl text-center space-y-3">
-              <div className="text-emerald-400 font-bold text-xl">Inquiry Submitted Successfully</div>
-              <p className="text-xs text-slate-300">Thank you for reaching out. Our enterprise team will contact you at your work email shortly.</p>
-            </div>
-          ) : (
-            <form 
-              onSubmit={(e) => { e.preventDefault(); setFormSubmitted(true); }} 
-              className="bg-slate-900/60 border border-slate-800 p-8 rounded-2xl space-y-4"
-            >
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs text-slate-400">Full Name</label>
-                  <input required type="text" placeholder="John Doe" className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-slate-100 focus:outline-none focus:border-emerald-500"/>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs text-slate-400">Work Email</label>
-                  <input required type="email" placeholder="john@company.com" className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-slate-100 focus:outline-none focus:border-emerald-500"/>
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs text-slate-400">Expected Monthly Audit Volume</label>
-                <select className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-slate-100 focus:outline-none focus:border-emerald-500">
-                  <option value="100">100 - 500 Audits / mo</option>
-                  <option value="1000">500 - 2,000 Audits / mo</option>
-                  <option value="5000">2,000+ Audits / mo</option>
-                </select>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs text-slate-400">Requirement Notes</label>
-                <textarea required rows={4} placeholder="Describe your field workforce verification needs..." className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-slate-100 focus:outline-none focus:border-emerald-500"></textarea>
-              </div>
-
-              <button type="submit" className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-sm transition-all shadow-lg shadow-emerald-500/20">
-                Submit Onboarding Request
-              </button>
-            </form>
-          )}
-        </section>
-
-      </main>
-
-      {/* 10. FOOTER & COMPLIANCE */}
-      <footer className="border-t border-slate-800/80 bg-slate-950 py-12 mt-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
           
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            
-            <div className="flex items-center space-x-3">
-              <img src="/logo.png" alt="Spotverify Footer Logo" className="h-7 w-auto" />
-              <span className="text-base font-bold text-slate-200">Spotverify Enterprise</span>
-            </div>
-
-            <div className="flex items-center space-x-6 text-xs text-slate-400">
-              <Link href="/privacy" className="hover:text-emerald-400 transition-colors underline underline-offset-4 font-semibold">
-                Privacy Policy &amp; Terms
-              </Link>
-              <span>&bull;</span>
-              <span>spotverify992@gmail.com</span>
-              <span>&bull;</span>
-              <span>+91 8247831885</span>
-            </div>
-
-          </div>
-
-          <div className="text-center md:text-left text-xs text-slate-500 border-t border-slate-800/60 pt-6 flex flex-col sm:flex-row justify-between items-center gap-2">
+          {/* Starter Plan */}
+          <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '20px', padding: '30px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <div>
-              &copy; {new Date().getFullYear()} Spotverify Enterprise. Operating Address: 58, 7th Main Road, GB Palya, Bengaluru, Karnataka, India.
+              <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#ffffff' }}>Starter SaaS</h3>
+              <p style={{ fontSize: '13px', color: '#94a3b8', margin: '6px 0 20px' }}>Great for small regional field teams.</p>
+              <div style={{ fontSize: '32px', fontWeight: '900', color: '#ffffff' }}>₹2,499 <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 'normal' }}>/ month</span></div>
+              <ul style={{ paddingLeft: '18px', fontSize: '13px', color: '#cbd5e1', lineHeight: '2.2', marginTop: '20px' }}>
+                <li>Up to 100 Verified Audits / month</li>
+                <li>Standard Hardware GPS Verification</li>
+                <li>Email Support</li>
+              </ul>
             </div>
-            <div className="text-slate-600">
-              Field Audit Verification &amp; Anti-Spoofing SaaS Platform
-            </div>
+            <Link href="/checkout" style={{ display: 'block', textAlign: 'center', padding: '12px', borderRadius: '10px', background: '#1e293b', color: '#ffffff', fontSize: '14px', fontWeight: '700', textDecoration: 'none', marginTop: '24px' }}>
+              Subscribe Starter
+            </Link>
           </div>
 
+          {/* Pro Plan - Featured */}
+          <div style={{ background: 'linear-gradient(180deg, #111827 0%, #070b14 100%)', border: '2px solid #10b981', borderRadius: '20px', padding: '30px', position: 'relative', boxShadow: '0 15px 35px rgba(16,185,129,0.2)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <span style={{ position: 'absolute', top: '-14px', left: '50%', transform: 'translateX(-50%)', background: '#10b981', color: '#041d14', fontSize: '11px', fontWeight: '900', padding: '4px 14px', borderRadius: '20px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              MOST POPULAR
+            </span>
+            <div>
+              <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#ffffff' }}>Pro Enterprise</h3>
+              <p style={{ fontSize: '13px', color: '#94a3b8', margin: '6px 0 20px' }}>For growing field audit networks &amp; banks.</p>
+              <div style={{ fontSize: '32px', fontWeight: '900', color: '#34d399' }}>₹7,999 <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 'normal' }}>/ month</span></div>
+              <ul style={{ paddingLeft: '18px', fontSize: '13px', color: '#ffffff', lineHeight: '2.2', marginTop: '20px' }}>
+                <li>Up to 1,000 Verified Audits / month</li>
+                <li>SHA-256 Digital Tamper Seals</li>
+                <li>Anti-Spoof Velocity Detection</li>
+                <li>Automated Razorpay Settlements</li>
+              </ul>
+            </div>
+            <Link href="/checkout" style={{ display: 'block', textAlign: 'center', padding: '12px', borderRadius: '10px', background: 'linear-gradient(135deg, #10b981, #06b6d4)', color: '#041d14', fontSize: '14px', fontWeight: '800', textDecoration: 'none', marginTop: '24px' }}>
+              Subscribe Pro Enterprise
+            </Link>
+          </div>
+
+          {/* Custom ERP Plan */}
+          <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '20px', padding: '30px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div>
+              <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#ffffff' }}>Custom ERP</h3>
+              <p style={{ fontSize: '13px', color: '#94a3b8', margin: '6px 0 20px' }}>For high-volume enterprise operations.</p>
+              <div style={{ fontSize: '32px', fontWeight: '900', color: '#ffffff' }}>Custom</div>
+              <ul style={{ paddingLeft: '18px', fontSize: '13px', color: '#cbd5e1', lineHeight: '2.2', marginTop: '20px' }}>
+                <li>Unlimited Field Audits</li>
+                <li>Dedicated Database Instance</li>
+                <li>Custom ERP Webhooks &amp; SLA</li>
+              </ul>
+            </div>
+            <a href="#contact" style={{ display: 'block', textAlign: 'center', padding: '12px', borderRadius: '10px', background: '#1e293b', color: '#ffffff', fontSize: '14px', fontWeight: '700', textDecoration: 'none', marginTop: '24px' }}>
+              Contact Enterprise Sales
+            </a>
+          </div>
+
+        </div>
+
+      </section>
+
+      {/* 8. FAQ ACCORDION */}
+      <section style={{ maxWidth: '750px', margin: '80px auto 0', padding: '0 20px' }}>
+        
+        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+          <h2 style={{ fontSize: '26px', fontWeight: '900', color: '#ffffff' }}>Frequently Asked Questions</h2>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {[
+            { q: 'How does Spotverify stop Fake GPS apps?', a: 'Spotverify connects directly to native mobile hardware providers and checks satellite signal patterns, mock location flags, and speed anomalies to catch spoofing instantly.' },
+            { q: 'What is SHA-256 Digital Tamper Sealing?', a: 'When a photo is taken, its exact pixels and GPS coordinates are converted into an unbreakable 64-character cryptographic hash. Any image editing breaks this seal, alerting managers to photo fraud.' },
+            { q: 'Does it work in areas with weak or no mobile signal?', a: 'Yes. Audits taken offline are safely saved into encrypted browser storage and automatically uploaded when the worker returns to network coverage.' }
+          ].map((faq, idx) => (
+            <div key={idx} style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px', overflow: 'hidden' }}>
+              <button 
+                onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
+                style={{ width: '100%', padding: '18px', textAlign: 'left', background: 'none', border: 'none', color: '#ffffff', fontWeight: '700', fontSize: '14px', display: 'flex', justifyContent: 'space-between', cursor: 'pointer' }}
+              >
+                <span>{faq.q}</span>
+                <span style={{ color: '#10b981', fontSize: '18px' }}>{openFaq === idx ? '−' : '+'}</span>
+              </button>
+              {openFaq === idx && (
+                <div style={{ padding: '0 18px 18px', fontSize: '13px', color: '#94a3b8', lineHeight: '1.6' }}>
+                  {faq.a}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+      </section>
+
+      {/* 9. FOOTER & COMPLIANCE */}
+      <footer style={{ borderTop: '1px solid #1e293b', marginTop: '100px', padding: '40px 20px 30px', background: '#04070e', fontSize: '13px', color: '#64748b' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: '20px', alignItems: 'center' }}>
+          <div>
+            <strong style={{ color: '#ffffff', fontSize: '16px' }}>Spotverify Enterprise</strong>
+            <div style={{ marginTop: '4px' }}>58, 7th Main Road, GB Palya, Bengaluru, Karnataka, India</div>
+          </div>
+          <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+            <Link href="/privacy" style={{ color: '#10b981', textDecoration: 'underline', fontWeight: '600' }}>Privacy Policy &amp; Terms</Link>
+            <span>spotverify992@gmail.com</span>
+            <span>+91 8247831885</span>
+          </div>
         </div>
       </footer>
 
